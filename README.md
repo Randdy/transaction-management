@@ -21,11 +21,7 @@
 ### 本地运行
 1. 克隆项目
 ```bash
-git clone https://gitee.com/RandyZhang/transaction-management.git
-
-or :
 git clone https://github.com/Randdy/transaction-management.git
-
 cd transaction-management
 ```
 
