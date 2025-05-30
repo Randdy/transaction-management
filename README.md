@@ -1,4 +1,4 @@
-# HSBC WPB Transaction Management System
+# Transaction Management System
 
 ## 项目简介
 这是一个基于 Spring Boot 3.2.3 和 JDK 21 开发的银行交易管理系统，提供交易处理、账户管理等核心功能。系统采用内存存储方式，支持 RESTful API 接口，并包含完整的单元测试和性能测试。
