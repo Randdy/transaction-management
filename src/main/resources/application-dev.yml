@@ -1,0 +1,114 @@
+spring:
+  application:
+    name: hsbc-wpb-transaction-management-dev
+  devtools:
+    restart:
+      poll-interval: 2s
+      quiet-period: 1s
+      enabled: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=5m,expireAfterAccess=2m
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  tomcat:
+    max-threads: 50
+    min-spare-threads: 5
+    max-connections: 1000
+    accept-count: 50
+    connection-timeout: 5000
+
+# Development specific settings
+app:
+  development:
+    enabled: true
+    show-errors: true
+    # 开发环境安全配置
+    security:
+      cors:
+        allowed-origins: "*"
+        allowed-methods: "*"
+        allowed-headers: "*"
+        max-age: 3600
+    # 开发环境性能配置
+    performance:
+      cache:
+        enabled: true
+        ttl: 300
+      rate-limit:
+        enabled: false
+    # 开发环境监控配置
+    monitoring:
+      enabled: true
+      metrics:
+        enabled: true
+        export:
+          prometheus:
+            enabled: false
+      health:
+        enabled: true
+        show-details: always
+    # 开发环境日志配置
+    logging:
+      show-errors: true
+      show-request-details: true
+  transaction:
+    rate-limit:
+      enabled: false  # 开发环境禁用速率限制
+    debug:
+      enabled: true
+      show-cache-stats: true
+
+# 开发环境日志配置
+logging:
+  level:
+    root: INFO
+    com.hsbc.wpb: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.boot.devtools: DEBUG
+    org.springframework.cache: TRACE
+  file:
+    name: ./logs/application-dev.log
+    max-size: 10MB
+    max-history: 7
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 开发环境Swagger配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+    filter: true
+  packages-to-scan: com.hsbc.wpb
+  paths-to-match: /api/**, /transactions/**
+  show-actuator: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  model-and-view-allowed: true
+  use-management-port: false
+  cache:
+    disabled: true
+
+# 开发环境缓存配置
+cache:
+  caffeine:
+    spec: maximumSize=1000,expireAfterWrite=5m,expireAfterAccess=2m
+    transaction:
+      spec: maximumSize=500,expireAfterWrite=2m
+    account:
+      spec: maximumSize=200,expireAfterWrite=5m
+    statistics:
+      spec: maximumSize=100,expireAfterWrite=1m 

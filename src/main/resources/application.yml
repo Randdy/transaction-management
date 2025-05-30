@@ -1,0 +1,112 @@
+# src/main/resources/application.yml
+spring:
+  application:
+    name: hsbc-wpb-transaction-management
+  profiles:
+    active: dev
+  devtools:
+    restart:
+      enabled: true
+      additional-paths: src/main/java
+      exclude: static/**,public/**
+    livereload:
+      enabled: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100000,expireAfterWrite=30m,expireAfterAccess=10m,recordStats
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 10
+    max-connections: 10000
+    accept-count: 100
+    connection-timeout: 20000
+
+# JVM Options for development
+jvm:
+  options:
+    -XX:+EnableDynamicAgentLoading
+    -Djdk.instrument.traceUsage=true
+    -XX:+UseG1GC
+    -XX:MaxGCPauseMillis=200
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=./logs
+    -XX:+PrintGCDetails
+    -XX:+PrintGCDateStamps
+    -Xlog:gc*=info:file=./logs/gc.log:time,uptime:filecount=5,filesize=20M
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+  packages-to-scan: com.hsbc.wpb.controller
+  paths-to-match: /api/**
+
+# 添加一些自定义配置
+app:
+  transaction:
+    max-amount: 1000000
+    min-amount: 1
+    supported-currencies: USD,EUR,GBP,JPY,CNY
+    rate-limit:
+      enabled: true
+      requests-per-second: 100
+
+# 缓存配置
+cache:
+  caffeine:
+    spec: maximumSize=100000,expireAfterWrite=30m,expireAfterAccess=10m,recordStats
+    transaction:
+      spec: maximumSize=10000,expireAfterWrite=15m
+    account:
+      spec: maximumSize=5000,expireAfterWrite=30m
+    statistics:
+      spec: maximumSize=1000,expireAfterWrite=5m
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.hsbc.wpb: DEBUG
+    org.springframework.cache: TRACE
+  file:
+    name: ./logs/application.log
+    max-size: 10MB
+    max-history: 30
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 性能监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+transaction:
+  duplicate-check-window-minutes: 5

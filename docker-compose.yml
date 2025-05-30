@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  transaction-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: hsbc-wpb-transaction-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_TOOL_OPTIONS=-XX:+UseZGC -Xms512m -Xmx1024m
+      - SPRING_H2_CONSOLE_ENABLED=true
+      - SPRING_H2_CONSOLE_SETTINGS_WEB_ALLOW_OTHERS=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    restart: unless-stopped
+    networks:
+      - transaction-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "com.hsbc.description=Transaction Management Service"
+      - "com.hsbc.version=1.0"
+      - "com.hsbc.maintainer=HSBC WPB"
+
+networks:
+  transaction-network:
+    driver: bridge

@@ -1,0 +1,140 @@
+spring:
+  # 数据库连接池配置
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      auto-commit: true
+      pool-name: HikariCP-${spring.application.name}
+      validation-timeout: 5000
+      connection-test-query: SELECT 1
+  
+  # Redis配置
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+    cache:
+      type: redis
+      redis:
+        time-to-live: 3600000
+        cache-null-values: true
+        use-key-prefix: true
+        key-prefix: "transaction:"
+
+  # 缓存配置
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100000,expireAfterWrite=1800s,expireAfterAccess=600s
+
+# 线程池配置
+app:
+  thread-pool:
+    core-size: 20
+    max-size: 200
+    queue-capacity: 1000
+    keep-alive: 60
+    thread-name-prefix: transaction-async-
+
+  # 限流配置
+  rate-limiter:
+    enabled: true
+    default-limit: 1000
+    default-duration: 60
+    endpoints:
+      transaction:
+        limit: 500
+        duration: 60
+      account:
+        limit: 200
+        duration: 60
+
+  # 熔断器配置
+  resilience4j:
+    circuitbreaker:
+      instances:
+        transactionService:
+          slidingWindowSize: 100
+          minimumNumberOfCalls: 10
+          permittedNumberOfCallsInHalfOpenState: 5
+          automaticTransitionFromOpenToHalfOpenEnabled: true
+          waitDurationInOpenState: 5s
+          failureRateThreshold: 50
+          eventConsumerBufferSize: 10
+    retry:
+      instances:
+        transactionService:
+          maxAttempts: 3
+          waitDuration: 1s
+          enableExponentialBackoff: true
+          exponentialBackoffMultiplier: 2
+
+  # 性能监控配置
+  monitoring:
+    metrics:
+      export:
+        prometheus:
+          enabled: true
+    tracing:
+      enabled: true
+      sampling:
+        probability: 1.0
+
+# 内存缓存配置
+app:
+  cache:
+    # 本地缓存配置
+    local:
+      # 交易缓存
+      transaction:
+        maximum-size: 100000
+        expire-after-write: 1800
+        expire-after-access: 600
+      # 账户缓存
+      account:
+        maximum-size: 50000
+        expire-after-write: 3600
+        expire-after-access: 1200
+      # 统计缓存
+      stats:
+        maximum-size: 10000
+        expire-after-write: 300
+        expire-after-access: 300
+
+# 服务器配置优化
+server:
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    max-connections: 10000
+    accept-count: 100
+    connection-timeout: 20000
+    max-keep-alive-requests: 100
+    keep-alive-timeout: 20000
+    max-swallow-size: 2MB
+    max-http-form-post-size: 2MB
+    compression:
+      enabled: true
+      mime-types: application/json,application/xml,text/html,text/xml,text/plain
+      min-response-size: 2048
+
+# 日志配置优化
+logging:
+  level:
+    root: INFO
+    com.hsbc.wpb: INFO
+    org.springframework.cache: INFO
+    com.github.benmanes.caffeine: INFO
+    org.springframework.web: WARN 

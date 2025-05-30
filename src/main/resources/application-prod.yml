@@ -1,0 +1,114 @@
+spring:
+  application:
+    name: hsbc-wpb-transaction-management
+  devtools:
+    restart:
+      enabled: false
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100000,expireAfterWrite=1h,expireAfterAccess=30m,recordStats
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 10
+    max-connections: 10000
+    accept-count: 100
+    connection-timeout: 20000
+    max-keep-alive-requests: 100
+    keep-alive-timeout: 20000
+
+# Production specific settings
+app:
+  production:
+    enabled: true
+    show-errors: false
+    # 生产环境安全配置
+    security:
+      cors:
+        allowed-origins: ${ALLOWED_ORIGINS:https://*.hsbc.com}
+        allowed-methods: GET,POST,PUT,DELETE
+        allowed-headers: "*"
+        max-age: 3600
+    # 生产环境性能配置
+    performance:
+      cache:
+        enabled: true
+        ttl: 3600
+      rate-limit:
+        enabled: true
+        requests-per-second: 100
+    # 生产环境监控配置
+    monitoring:
+      enabled: true
+      metrics:
+        enabled: true
+        export:
+          prometheus:
+            enabled: true
+      health:
+        enabled: true
+        show-details: when_authorized
+
+# 生产环境日志配置
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    com.hsbc.wpb: INFO
+    org.springframework.web: WARN
+    org.springframework.cache: INFO
+    org.springframework.boot.devtools: OFF
+  file:
+    name: ./logs/application-prod.log
+    max-size: 100MB
+    max-history: 30
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 生产环境Swagger配置
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+    path: /api-docs
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: false
+    filter: true
+  packages-to-scan: com.hsbc.wpb.controller
+  paths-to-match: /api/**
+
+# 生产环境事务配置
+app:
+  transaction:
+    max-amount: ${MAX_TRANSACTION_AMOUNT:1000000}
+    min-amount: ${MIN_TRANSACTION_AMOUNT:1}
+    supported-currencies: USD,EUR,GBP,JPY,CNY
+    timeout: 30
+    retry:
+      max-attempts: 3
+      initial-interval: 1000
+      multiplier: 2.0
+      max-interval: 10000
+    rate-limit:
+      enabled: true
+      requests-per-second: 100
+
+# 生产环境缓存配置
+cache:
+  caffeine:
+    spec: maximumSize=100000,expireAfterWrite=1h,expireAfterAccess=30m,recordStats
+    transaction:
+      spec: maximumSize=50000,expireAfterWrite=30m
+    account:
+      spec: maximumSize=20000,expireAfterWrite=1h
+    statistics:
+      spec: maximumSize=5000,expireAfterWrite=15m 

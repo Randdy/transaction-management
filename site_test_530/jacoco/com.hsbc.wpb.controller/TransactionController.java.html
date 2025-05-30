@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransactionController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">transaction-management</a> &gt; <a href="index.source.html" class="el_package">com.hsbc.wpb.controller</a> &gt; <span class="el_source">TransactionController.java</span></div><h1>TransactionController.java</h1><pre class="source lang-java linenums">package com.hsbc.wpb.controller;
+
+import com.hsbc.wpb.exception.DuplicateTransactionException;
+import com.hsbc.wpb.exception.TransactionException;
+import com.hsbc.wpb.model.Transaction;
+import com.hsbc.wpb.model.TransactionType;
+import com.hsbc.wpb.model.TransactionRequest;
+import com.hsbc.wpb.model.TransactionUpdateRequest;
+import com.hsbc.wpb.service.TransactionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/transactions&quot;)
+@Tag(name = &quot;Transaction Management&quot;, description = &quot;APIs for managing bank transactions&quot;)
+public class TransactionController {
+    private final TransactionService transactionService;
+
+<span class="fc" id="L39">    public TransactionController(TransactionService transactionService) {</span>
+<span class="fc" id="L40">        this.transactionService = transactionService;</span>
+<span class="fc" id="L41">    }</span>
+
+    @Operation(
+        summary = &quot;Create a new transaction&quot;,
+        description = &quot;Creates a new transaction with the provided details&quot;
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = &quot;200&quot;,
+            description = &quot;Transaction created successfully&quot;,
+            content = @Content(schema = @Schema(implementation = Transaction.class))
+        ),
+        @ApiResponse(
+            responseCode = &quot;400&quot;,
+            description = &quot;Invalid transaction data provided&quot;
+        ),
+        @ApiResponse(
+            responseCode = &quot;409&quot;,
+            description = &quot;Duplicate transaction detected&quot;
+        ),
+        @ApiResponse(
+            responseCode = &quot;500&quot;,
+            description = &quot;Internal server error&quot;
+        )
+    })
+    @PostMapping
+    public ResponseEntity&lt;Transaction&gt; createTransaction(
+        @Parameter(description = &quot;Transaction details&quot;, required = true)
+        @Valid @RequestBody TransactionRequest request
+    ) {
+        try {
+<span class="fc" id="L72">            Transaction transaction = Transaction.create(</span>
+<span class="fc" id="L73">                request.getFromAccount(),</span>
+<span class="fc" id="L74">                request.getToAccount(),</span>
+<span class="fc" id="L75">                request.getAmount(),</span>
+<span class="fc" id="L76">                request.getType()</span>
+            );
+
+<span class="fc" id="L79">            return ResponseEntity.ok(transactionService.createTransaction(transaction));</span>
+<span class="nc" id="L80">        } catch (DuplicateTransactionException e) {</span>
+<span class="nc" id="L81">            return ResponseEntity.status(HttpStatus.CONFLICT).build();</span>
+<span class="nc" id="L82">        } catch (TransactionException e) {</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (e.getMessage().contains(&quot;does not exist&quot;)) {</span>
+<span class="nc" id="L84">                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();</span>
+            }
+<span class="nc" id="L86">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();</span>
+<span class="nc" id="L87">        } catch (Exception e){</span>
+<span class="nc" id="L88">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();</span>
+        }
+    }
+
+    @Operation(
+        summary = &quot;Get all transactions with pagination&quot;,
+        description = &quot;Retrieves a paginated list of all transactions&quot;
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = &quot;200&quot;,
+            description = &quot;Successfully retrieved transactions&quot;,
+            content = @Content(schema = @Schema(implementation = Page.class))
+        )
+    })
+    @GetMapping
+    public ResponseEntity&lt;Page&lt;Transaction&gt;&gt; getAllTransactions(
+        @Parameter(description = &quot;Page number (0-based)&quot;)
+        @RequestParam(defaultValue = &quot;0&quot;) int page,
+        
+        @Parameter(description = &quot;Page size&quot;)
+        @RequestParam(defaultValue = &quot;10&quot;) int size,
+        
+        @Parameter(description = &quot;Sort field&quot;)
+        @RequestParam(defaultValue = &quot;timestamp&quot;) String sortBy,
+        
+        @Parameter(description = &quot;Sort direction&quot;)
+        @RequestParam(defaultValue = &quot;DESC&quot;) String direction
+    ) {
+<span class="fc" id="L117">        Sort.Direction sortDirection = Sort.Direction.fromString(direction);</span>
+<span class="fc" id="L118">        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));</span>
+<span class="fc" id="L119">        return ResponseEntity.ok(transactionService.getAllTransactions(pageRequest));</span>
+    }
+
+    @Operation(
+        summary = &quot;Search transactions&quot;,
+        description = &quot;Search transactions with various criteria&quot;
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = &quot;200&quot;,
+            description = &quot;Successfully retrieved transactions&quot;,
+            content = @Content(schema = @Schema(implementation = Page.class))
+        )
+    })
+    @GetMapping(&quot;/search&quot;)
+    public ResponseEntity&lt;Page&lt;Transaction&gt;&gt; searchTransactions(
+        @Parameter(description = &quot;From account number&quot;)
+        @RequestParam(required = false) String fromAccount,
+        
+        @Parameter(description = &quot;To account number&quot;)
+        @RequestParam(required = false) String toAccount,
+        
+        @Parameter(description = &quot;Transaction type&quot;)
+        @RequestParam(required = false) TransactionType type,
+        
+        @Parameter(description = &quot;Minimum amount&quot;)
+        @RequestParam(required = false) BigDecimal minAmount,
+        
+        @Parameter(description = &quot;Maximum amount&quot;)
+        @RequestParam(required = false) BigDecimal maxAmount,
+        
+        @Parameter(description = &quot;Start date&quot;)
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+        
+        @Parameter(description = &quot;End date&quot;)
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+        
+        @Parameter(description = &quot;Page number (0-based)&quot;)
+        @RequestParam(defaultValue = &quot;0&quot;) int page,
+        
+        @Parameter(description = &quot;Page size&quot;)
+        @RequestParam(defaultValue = &quot;10&quot;) int size,
+        
+        @Parameter(description = &quot;Sort field&quot;)
+        @RequestParam(defaultValue = &quot;timestamp&quot;) String sortBy,
+        
+        @Parameter(description = &quot;Sort direction&quot;)
+        @RequestParam(defaultValue = &quot;DESC&quot;) String direction
+    ) {
+<span class="nc" id="L168">        Sort.Direction sortDirection = Sort.Direction.fromString(direction);</span>
+<span class="nc" id="L169">        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));</span>
+        
+<span class="nc" id="L171">        return ResponseEntity.ok(transactionService.searchTransactions(</span>
+            fromAccount,
+            toAccount,
+            type,
+            minAmount,
+            maxAmount,
+            startDate,
+            endDate,
+            pageRequest
+        ));
+    }
+
+    @Operation(
+        summary = &quot;Get transaction by ID&quot;,
+        description = &quot;Retrieves a specific transaction by its ID&quot;
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = &quot;200&quot;,
+            description = &quot;Successfully retrieved the transaction&quot;,
+            content = @Content(schema = @Schema(implementation = Transaction.class))
+        ),
+        @ApiResponse(
+            responseCode = &quot;404&quot;,
+            description = &quot;Transaction not found&quot;
+        )
+    })
+    @GetMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Transaction&gt; getTransaction(
+        @Parameter(description = &quot;Transaction ID&quot;, required = true)
+        @PathVariable Long id
+    ) {
+<span class="fc" id="L203">        return ResponseEntity.ok(transactionService.getTransaction(id));</span>
+    }
+
+    @Operation(
+        summary = &quot;Modify transaction&quot;,
+        description = &quot;Modifies an existing transaction by its ID&quot;
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = &quot;200&quot;,
+            description = &quot;Transaction modified successfully&quot;,
+            content = @Content(schema = @Schema(implementation = Transaction.class))
+        ),
+        @ApiResponse(
+            responseCode = &quot;400&quot;,
+            description = &quot;Invalid transaction data provided&quot;
+        ),
+        @ApiResponse(
+            responseCode = &quot;404&quot;,
+            description = &quot;Transaction not found&quot;
+        )
+    })
+    @PutMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Transaction&gt; modifyTransaction(
+        @Parameter(description = &quot;Transaction ID&quot;, required = true)
+        @PathVariable Long id,
+        @Parameter(description = &quot;Updated transaction details&quot;, required = true)
+        @Valid @RequestBody TransactionUpdateRequest request
+    ) {
+<span class="nc" id="L232">        Transaction transaction = Transaction.create(</span>
+<span class="nc" id="L233">            request.getFromAccount(),</span>
+<span class="nc" id="L234">            request.getToAccount(),</span>
+<span class="nc" id="L235">            request.getAmount(),</span>
+<span class="nc" id="L236">            request.getType()</span>
+        );
+<span class="nc" id="L238">        return ResponseEntity.ok(transactionService.modifyTransaction(id, transaction));</span>
+    }
+
+    @Operation(
+        summary = &quot;Delete transaction&quot;,
+        description = &quot;Deletes a specific transaction by its ID&quot;
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = &quot;204&quot;,
+            description = &quot;Transaction deleted successfully&quot;
+        ),
+        @ApiResponse(
+            responseCode = &quot;404&quot;,
+            description = &quot;Transaction not found&quot;
+        ),
+        @ApiResponse(
+            responseCode = &quot;400&quot;,
+            description = &quot;Cannot delete transaction (e.g., too old)&quot;
+        )
+    })
+    @DeleteMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteTransaction(
+        @Parameter(description = &quot;Transaction ID&quot;, required = true)
+        @PathVariable Long id
+    ) {
+        try {
+<span class="fc" id="L265">            Transaction transaction = transactionService.getTransaction(id);</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">            if (transaction == null) {</span>
+<span class="fc" id="L267">                return ResponseEntity.notFound().build();</span>
+            }
+<span class="fc" id="L269">            transactionService.deleteTransaction(id);</span>
+<span class="fc" id="L270">            return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L271">        } catch (TransactionException e) {</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">            if (e.getMessage().contains(&quot;not found&quot;)) {</span>
+<span class="nc" id="L273">                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();</span>
+            }
+<span class="fc" id="L275">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();</span>
+        }
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleValidationExceptions(MethodArgumentNotValidException ex) {
+<span class="fc" id="L281">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L282">        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</span>
+        
+<span class="fc" id="L284">        ex.getBindingResult().getAllErrors().forEach((error) -&gt; {</span>
+<span class="fc" id="L285">            String fieldName = ((FieldError) error).getField();</span>
+<span class="fc" id="L286">            String errorMessage = error.getDefaultMessage();</span>
+<span class="fc" id="L287">            errors.put(fieldName, errorMessage);</span>
+<span class="fc" id="L288">        });</span>
+        
+<span class="fc" id="L290">        response.put(&quot;errors&quot;, errors);</span>
+<span class="fc" id="L291">        response.put(&quot;message&quot;, &quot;Validation failed&quot;);</span>
+        
+<span class="fc" id="L293">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
+    }
+
+    @ExceptionHandler(TransactionException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleTransactionException(TransactionException ex) {
+<span class="nc" id="L298">        Map&lt;String, String&gt; response = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L299">        response.put(&quot;message&quot;, ex.getMessage());</span>
+        
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        HttpStatus status = ex.getMessage().contains(&quot;not found&quot;) ? </span>
+<span class="nc" id="L302">            HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;</span>
+            
+<span class="nc" id="L304">        return ResponseEntity.status(status).body(response);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

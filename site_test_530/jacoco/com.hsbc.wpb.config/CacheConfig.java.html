@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CacheConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">transaction-management</a> &gt; <a href="index.source.html" class="el_package">com.hsbc.wpb.config</a> &gt; <span class="el_source">CacheConfig.java</span></div><h1>CacheConfig.java</h1><pre class="source lang-java linenums">package com.hsbc.wpb.config;
+
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
+import com.hsbc.wpb.repository.InMemoryRepository;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+@Configuration
+@EnableCaching
+@EnableScheduling
+<span class="nc" id="L25">public class CacheConfig {</span>
+
+    @Bean
+    @Primary
+    public CacheManager cacheManager() {
+<span class="nc" id="L30">        CaffeineCacheManager cacheManager = new CaffeineCacheManager();</span>
+<span class="nc" id="L31">        cacheManager.setCaffeine(caffeineConfig());</span>
+<span class="nc" id="L32">        return cacheManager;</span>
+    }
+
+    @Bean
+    public Caffeine&lt;Object, Object&gt; caffeineConfig() {
+<span class="nc" id="L37">        return Caffeine.newBuilder()</span>
+                // 设置写入后过期时间
+<span class="nc" id="L39">                .expireAfterWrite(30, TimeUnit.MINUTES)</span>
+                // 设置访问后过期时间
+<span class="nc" id="L41">                .expireAfterAccess(10, TimeUnit.MINUTES)</span>
+                // 初始容量
+<span class="nc" id="L43">                .initialCapacity(1000)</span>
+                // 最大容量
+<span class="nc" id="L45">                .maximumSize(100000)</span>
+                // 开启统计
+<span class="nc" id="L47">                .recordStats()</span>
+                // 开启弱引用，允许垃圾回收
+<span class="nc" id="L49">                .weakKeys()</span>
+<span class="nc" id="L50">                .weakValues();</span>
+    }
+
+    // 缓存预热任务
+    @Bean
+    public CacheWarmUpService cacheWarmUpService(CacheManager cacheManager, InMemoryRepository repository) {
+<span class="nc" id="L56">        return new CacheWarmUpService(cacheManager, repository);</span>
+    }
+
+    // 缓存监控任务
+    @Bean
+    public CacheMonitorService cacheMonitorService(CacheManager cacheManager) {
+<span class="nc" id="L62">        return new CacheMonitorService(cacheManager);</span>
+    }
+}
+
+// 缓存预热服务
+class CacheWarmUpService {
+    private final CacheManager cacheManager;
+    private final InMemoryRepository repository;
+<span class="nc" id="L70">    private static final Logger log = LoggerFactory.getLogger(CacheWarmUpService.class);</span>
+
+<span class="nc" id="L72">    public CacheWarmUpService(CacheManager cacheManager, InMemoryRepository repository) {</span>
+<span class="nc" id="L73">        this.cacheManager = cacheManager;</span>
+<span class="nc" id="L74">        this.repository = repository;</span>
+<span class="nc" id="L75">    }</span>
+
+    // 应用启动时执行缓存预热
+    @PostConstruct
+    public void warmUp() {
+<span class="nc" id="L80">        log.info(&quot;Starting cache warm-up...&quot;);</span>
+        try {
+            // 预热交易列表缓存
+<span class="nc" id="L83">            repository.findAllTransactions().forEach(transaction -&gt; {</span>
+<span class="nc" id="L84">                cacheManager.getCache(&quot;transactions&quot;).put(transaction.id(), transaction);</span>
+<span class="nc" id="L85">            });</span>
+<span class="nc" id="L86">            log.info(&quot;Transaction cache warm-up completed&quot;);</span>
+
+            // 预热账户缓存
+<span class="nc" id="L89">            repository.findAllAccounts().forEach(account -&gt; {</span>
+<span class="nc" id="L90">                cacheManager.getCache(&quot;accounts&quot;).put(account.accountNumber(), account);</span>
+<span class="nc" id="L91">            });</span>
+<span class="nc" id="L92">            log.info(&quot;Account cache warm-up completed&quot;);</span>
+
+            // 预热交易列表缓存
+<span class="nc" id="L95">            cacheManager.getCache(&quot;transactionList&quot;).put(&quot;all&quot;, repository.findAllTransactions());</span>
+<span class="nc" id="L96">            log.info(&quot;Transaction list cache warm-up completed&quot;);</span>
+<span class="nc" id="L97">        } catch (Exception e) {</span>
+<span class="nc" id="L98">            log.error(&quot;Cache warm-up failed&quot;, e);</span>
+<span class="nc" id="L99">        }</span>
+<span class="nc" id="L100">    }</span>
+
+    // 定时预热（每天凌晨2点执行）
+    @Scheduled(cron = &quot;0 0 2 * * ?&quot;)
+    public void scheduledWarmUp() {
+<span class="nc" id="L105">        log.info(&quot;Starting scheduled cache warm-up...&quot;);</span>
+<span class="nc" id="L106">        warmUp();</span>
+<span class="nc" id="L107">    }</span>
+}
+
+// 缓存监控服务
+class CacheMonitorService {
+    private final CacheManager cacheManager;
+<span class="nc" id="L113">    private static final Logger log = LoggerFactory.getLogger(CacheMonitorService.class);</span>
+
+<span class="nc" id="L115">    public CacheMonitorService(CacheManager cacheManager) {</span>
+<span class="nc" id="L116">        this.cacheManager = cacheManager;</span>
+<span class="nc" id="L117">    }</span>
+
+    // 每5分钟监控一次缓存状态
+    @Scheduled(fixedRate = 300000)
+    public void monitorCache() {
+<span class="nc" id="L122">        CaffeineCacheManager caffeineCacheManager = (CaffeineCacheManager) cacheManager;</span>
+<span class="nc" id="L123">        Map&lt;String, CacheStats&gt; stats = new HashMap&lt;&gt;();</span>
+
+        // 获取所有缓存的统计信息
+<span class="nc" id="L126">        caffeineCacheManager.getCacheNames().forEach(name -&gt; {</span>
+<span class="nc" id="L127">            com.github.benmanes.caffeine.cache.Cache&lt;?, ?&gt; cache = </span>
+<span class="nc" id="L128">                (com.github.benmanes.caffeine.cache.Cache&lt;?, ?&gt;) caffeineCacheManager.getCache(name).getNativeCache();</span>
+<span class="nc" id="L129">            stats.put(name, cache.stats());</span>
+<span class="nc" id="L130">        });</span>
+
+        // 记录缓存统计信息
+<span class="nc" id="L133">        stats.forEach((name, stat) -&gt; {</span>
+<span class="nc" id="L134">            log.info(&quot;Cache '{}' stats:&quot;, name);</span>
+<span class="nc" id="L135">            log.info(&quot;  Hit rate: {:.2f}%&quot;, stat.hitRate() * 100);</span>
+<span class="nc" id="L136">            log.info(&quot;  Miss rate: {:.2f}%&quot;, stat.missRate() * 100);</span>
+<span class="nc" id="L137">            log.info(&quot;  Average load penalty: {} ms&quot;, stat.averageLoadPenalty() / 1_000_000);</span>
+<span class="nc" id="L138">            log.info(&quot;  Eviction count: {}&quot;, stat.evictionCount());</span>
+<span class="nc" id="L139">        });</span>
+
+        // 监控内存使用情况
+<span class="nc" id="L142">        Runtime runtime = Runtime.getRuntime();</span>
+<span class="nc" id="L143">        long totalMemory = runtime.totalMemory();</span>
+<span class="nc" id="L144">        long freeMemory = runtime.freeMemory();</span>
+<span class="nc" id="L145">        long usedMemory = totalMemory - freeMemory;</span>
+        
+<span class="nc" id="L147">        log.info(&quot;Memory usage:&quot;);</span>
+<span class="nc" id="L148">        log.info(&quot;  Total memory: {} MB&quot;, totalMemory / (1024 * 1024));</span>
+<span class="nc" id="L149">        log.info(&quot;  Used memory: {} MB&quot;, usedMemory / (1024 * 1024));</span>
+<span class="nc" id="L150">        log.info(&quot;  Free memory: {} MB&quot;, freeMemory / (1024 * 1024));</span>
+<span class="nc" id="L151">        log.info(&quot;  Max memory: {} MB&quot;, runtime.maxMemory() / (1024 * 1024));</span>
+<span class="nc" id="L152">    }</span>
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InMemoryRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">transaction-management</a> &gt; <a href="index.source.html" class="el_package">com.hsbc.wpb.repository</a> &gt; <span class="el_source">InMemoryRepository.java</span></div><h1>InMemoryRepository.java</h1><pre class="source lang-java linenums">package com.hsbc.wpb.repository;
+
+import com.hsbc.wpb.model.Transaction;
+import com.hsbc.wpb.model.Account;
+import org.springframework.stereotype.Repository;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicLong;
+import java.math.BigDecimal;
+import jakarta.annotation.PostConstruct;
+import com.hsbc.wpb.model.AccountType;
+
+@Repository
+<span class="nc" id="L17">public class InMemoryRepository {</span>
+<span class="nc" id="L18">    private final Map&lt;Long, Transaction&gt; transactions = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="nc" id="L19">    private final Map&lt;String, Account&gt; accounts = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="nc" id="L20">    private final AtomicLong transactionIdGenerator = new AtomicLong(1);</span>
+<span class="nc" id="L21">    private final ReentrantReadWriteLock accountLock = new ReentrantReadWriteLock();</span>
+
+    @PostConstruct
+    public void initializeTestData() {
+        // 创建50个测试账户，增加初始余额
+<span class="nc" id="L26">        Account account1 = Account.create(&quot;ACC001&quot;, &quot;Test Account 1&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L27">        Account account2 = Account.create(&quot;ACC002&quot;, &quot;Test Account 2&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L28">        Account account3 = Account.create(&quot;ACC003&quot;, &quot;Test Account 3&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L29">        Account account4 = Account.create(&quot;ACC004&quot;, &quot;Test Account 4&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L30">        Account account5 = Account.create(&quot;ACC005&quot;, &quot;Test Account 5&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L31">        Account account6 = Account.create(&quot;ACC006&quot;, &quot;Test Account 6&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L32">        Account account7 = Account.create(&quot;ACC007&quot;, &quot;Test Account 7&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L33">        Account account8 = Account.create(&quot;ACC008&quot;, &quot;Test Account 8&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L34">        Account account9 = Account.create(&quot;ACC009&quot;, &quot;Test Account 9&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L35">        Account account10 = Account.create(&quot;ACC010&quot;, &quot;Test Account 10&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L36">        Account account11 = Account.create(&quot;ACC011&quot;, &quot;Test Account 11&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L37">        Account account12 = Account.create(&quot;ACC012&quot;, &quot;Test Account 12&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L38">        Account account13 = Account.create(&quot;ACC013&quot;, &quot;Test Account 13&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L39">        Account account14 = Account.create(&quot;ACC014&quot;, &quot;Test Account 14&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L40">        Account account15 = Account.create(&quot;ACC015&quot;, &quot;Test Account 15&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L41">        Account account16 = Account.create(&quot;ACC016&quot;, &quot;Test Account 16&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L42">        Account account17 = Account.create(&quot;ACC017&quot;, &quot;Test Account 17&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L43">        Account account18 = Account.create(&quot;ACC018&quot;, &quot;Test Account 18&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L44">        Account account19 = Account.create(&quot;ACC019&quot;, &quot;Test Account 19&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L45">        Account account20 = Account.create(&quot;ACC020&quot;, &quot;Test Account 20&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L46">        Account account21 = Account.create(&quot;ACC021&quot;, &quot;Test Account 21&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L47">        Account account22 = Account.create(&quot;ACC022&quot;, &quot;Test Account 22&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L48">        Account account23 = Account.create(&quot;ACC023&quot;, &quot;Test Account 23&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L49">        Account account24 = Account.create(&quot;ACC024&quot;, &quot;Test Account 24&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L50">        Account account25 = Account.create(&quot;ACC025&quot;, &quot;Test Account 25&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L51">        Account account26 = Account.create(&quot;ACC026&quot;, &quot;Test Account 26&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L52">        Account account27 = Account.create(&quot;ACC027&quot;, &quot;Test Account 27&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L53">        Account account28 = Account.create(&quot;ACC028&quot;, &quot;Test Account 28&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L54">        Account account29 = Account.create(&quot;ACC029&quot;, &quot;Test Account 29&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L55">        Account account30 = Account.create(&quot;ACC030&quot;, &quot;Test Account 30&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L56">        Account account31 = Account.create(&quot;ACC031&quot;, &quot;Test Account 31&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L57">        Account account32 = Account.create(&quot;ACC032&quot;, &quot;Test Account 32&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L58">        Account account33 = Account.create(&quot;ACC033&quot;, &quot;Test Account 33&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L59">        Account account34 = Account.create(&quot;ACC034&quot;, &quot;Test Account 34&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L60">        Account account35 = Account.create(&quot;ACC035&quot;, &quot;Test Account 35&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L61">        Account account36 = Account.create(&quot;ACC036&quot;, &quot;Test Account 36&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L62">        Account account37 = Account.create(&quot;ACC037&quot;, &quot;Test Account 37&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L63">        Account account38 = Account.create(&quot;ACC038&quot;, &quot;Test Account 38&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L64">        Account account39 = Account.create(&quot;ACC039&quot;, &quot;Test Account 39&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L65">        Account account40 = Account.create(&quot;ACC040&quot;, &quot;Test Account 40&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L66">        Account account41 = Account.create(&quot;ACC041&quot;, &quot;Test Account 41&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L67">        Account account42 = Account.create(&quot;ACC042&quot;, &quot;Test Account 42&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L68">        Account account43 = Account.create(&quot;ACC043&quot;, &quot;Test Account 43&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L69">        Account account44 = Account.create(&quot;ACC044&quot;, &quot;Test Account 44&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L70">        Account account45 = Account.create(&quot;ACC045&quot;, &quot;Test Account 45&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L71">        Account account46 = Account.create(&quot;ACC046&quot;, &quot;Test Account 46&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L72">        Account account47 = Account.create(&quot;ACC047&quot;, &quot;Test Account 47&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L73">        Account account48 = Account.create(&quot;ACC048&quot;, &quot;Test Account 48&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L74">        Account account49 = Account.create(&quot;ACC049&quot;, &quot;Test Account 49&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+<span class="nc" id="L75">        Account account50 = Account.create(&quot;ACC050&quot;, &quot;Test Account 50&quot;, new BigDecimal(&quot;10000000.00&quot;), AccountType.SAVINGS);</span>
+
+        // 保存账户到内存中
+<span class="nc" id="L78">        accounts.put(account1.accountNumber(), account1);</span>
+<span class="nc" id="L79">        accounts.put(account2.accountNumber(), account2);</span>
+<span class="nc" id="L80">        accounts.put(account3.accountNumber(), account3);</span>
+<span class="nc" id="L81">        accounts.put(account4.accountNumber(), account4);</span>
+<span class="nc" id="L82">        accounts.put(account5.accountNumber(), account5);</span>
+<span class="nc" id="L83">        accounts.put(account6.accountNumber(), account6);</span>
+<span class="nc" id="L84">        accounts.put(account7.accountNumber(), account7);</span>
+<span class="nc" id="L85">        accounts.put(account8.accountNumber(), account8);</span>
+<span class="nc" id="L86">        accounts.put(account9.accountNumber(), account9);</span>
+<span class="nc" id="L87">        accounts.put(account10.accountNumber(), account10);</span>
+<span class="nc" id="L88">        accounts.put(account11.accountNumber(), account11);</span>
+<span class="nc" id="L89">        accounts.put(account12.accountNumber(), account12);</span>
+<span class="nc" id="L90">        accounts.put(account13.accountNumber(), account13);</span>
+<span class="nc" id="L91">        accounts.put(account14.accountNumber(), account14);</span>
+<span class="nc" id="L92">        accounts.put(account15.accountNumber(), account15);</span>
+<span class="nc" id="L93">        accounts.put(account16.accountNumber(), account16);</span>
+<span class="nc" id="L94">        accounts.put(account17.accountNumber(), account17);</span>
+<span class="nc" id="L95">        accounts.put(account18.accountNumber(), account18);</span>
+<span class="nc" id="L96">        accounts.put(account19.accountNumber(), account19);</span>
+<span class="nc" id="L97">        accounts.put(account20.accountNumber(), account20);</span>
+<span class="nc" id="L98">        accounts.put(account21.accountNumber(), account21);</span>
+<span class="nc" id="L99">        accounts.put(account22.accountNumber(), account22);</span>
+<span class="nc" id="L100">        accounts.put(account23.accountNumber(), account23);</span>
+<span class="nc" id="L101">        accounts.put(account24.accountNumber(), account24);</span>
+<span class="nc" id="L102">        accounts.put(account25.accountNumber(), account25);</span>
+<span class="nc" id="L103">        accounts.put(account26.accountNumber(), account26);</span>
+<span class="nc" id="L104">        accounts.put(account27.accountNumber(), account27);</span>
+<span class="nc" id="L105">        accounts.put(account28.accountNumber(), account28);</span>
+<span class="nc" id="L106">        accounts.put(account29.accountNumber(), account29);</span>
+<span class="nc" id="L107">        accounts.put(account30.accountNumber(), account30);</span>
+<span class="nc" id="L108">        accounts.put(account31.accountNumber(), account31);</span>
+<span class="nc" id="L109">        accounts.put(account32.accountNumber(), account32);</span>
+<span class="nc" id="L110">        accounts.put(account33.accountNumber(), account33);</span>
+<span class="nc" id="L111">        accounts.put(account34.accountNumber(), account34);</span>
+<span class="nc" id="L112">        accounts.put(account35.accountNumber(), account35);</span>
+<span class="nc" id="L113">        accounts.put(account36.accountNumber(), account36);</span>
+<span class="nc" id="L114">        accounts.put(account37.accountNumber(), account37);</span>
+<span class="nc" id="L115">        accounts.put(account38.accountNumber(), account38);</span>
+<span class="nc" id="L116">        accounts.put(account39.accountNumber(), account39);</span>
+<span class="nc" id="L117">        accounts.put(account40.accountNumber(), account40);</span>
+<span class="nc" id="L118">        accounts.put(account41.accountNumber(), account41);</span>
+<span class="nc" id="L119">        accounts.put(account42.accountNumber(), account42);</span>
+<span class="nc" id="L120">        accounts.put(account43.accountNumber(), account43);</span>
+<span class="nc" id="L121">        accounts.put(account44.accountNumber(), account44);</span>
+<span class="nc" id="L122">        accounts.put(account45.accountNumber(), account45);</span>
+<span class="nc" id="L123">        accounts.put(account46.accountNumber(), account46);</span>
+<span class="nc" id="L124">        accounts.put(account47.accountNumber(), account47);</span>
+<span class="nc" id="L125">        accounts.put(account48.accountNumber(), account48);</span>
+<span class="nc" id="L126">        accounts.put(account49.accountNumber(), account49);</span>
+<span class="nc" id="L127">        accounts.put(account50.accountNumber(), account50);</span>
+<span class="nc" id="L128">    }</span>
+
+    public Transaction saveTransaction(Transaction transaction) {
+<span class="nc" id="L131">        Long id = transactionIdGenerator.getAndIncrement();</span>
+<span class="nc" id="L132">        Transaction newTransaction = new Transaction(</span>
+            id,
+<span class="nc" id="L134">            transaction.fromAccount(),</span>
+<span class="nc" id="L135">            transaction.toAccount(),</span>
+<span class="nc" id="L136">            transaction.amount(),</span>
+<span class="nc" id="L137">            transaction.type(),</span>
+<span class="nc" id="L138">            transaction.timestamp(),</span>
+<span class="nc" id="L139">            transaction.status()</span>
+        );
+<span class="nc" id="L141">        transactions.put(id, newTransaction);</span>
+<span class="nc" id="L142">        return newTransaction;</span>
+    }
+
+    public Transaction findTransactionById(Long id) {
+<span class="nc" id="L146">        return transactions.get(id);</span>
+    }
+
+    public List&lt;Transaction&gt; findAllTransactions() {
+<span class="nc" id="L150">        return new ArrayList&lt;&gt;(transactions.values());</span>
+    }
+
+    public void deleteTransaction(Long id) {
+<span class="nc" id="L154">        transactions.remove(id);</span>
+<span class="nc" id="L155">    }</span>
+
+    public Account saveAccount(Account account) {
+<span class="nc" id="L158">        accounts.put(account.accountNumber(), account);</span>
+<span class="nc" id="L159">        return account;</span>
+    }
+
+    public Account findAccountByNumber(String accountNumber) {
+<span class="nc" id="L163">        return accounts.get(accountNumber);</span>
+    }
+
+    public boolean validateAccountBalance(String accountNumber, BigDecimal amount) {
+<span class="nc" id="L167">        accountLock.readLock().lock();</span>
+        try {
+<span class="nc" id="L169">            Account account = accounts.get(accountNumber);</span>
+<span class="nc bnc" id="L170" title="All 4 branches missed.">            return account != null &amp;&amp; account.balance().compareTo(amount) &gt;= 0;</span>
+        } finally {
+<span class="nc" id="L172">            accountLock.readLock().unlock();</span>
+        }
+    }
+
+    public void updateAccountBalances(String fromAccount, String toAccount, BigDecimal amount) {
+<span class="nc" id="L177">        accountLock.writeLock().lock();</span>
+        try {
+<span class="nc" id="L179">            Account from = accounts.get(fromAccount);</span>
+<span class="nc" id="L180">            Account to = accounts.get(toAccount);</span>
+            
+<span class="nc bnc" id="L182" title="All 4 branches missed.">            if (from == null || to == null) {</span>
+<span class="nc" id="L183">                throw new IllegalArgumentException(&quot;Account not found&quot;);</span>
+            }
+            
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            if (from.balance().compareTo(amount) &lt; 0) {</span>
+<span class="nc" id="L187">                throw new IllegalArgumentException(&quot;Insufficient funds&quot;);</span>
+            }
+            
+            // 原子性更新账户余额
+<span class="nc" id="L191">            Account updatedFrom = from.withBalance(from.balance().subtract(amount));</span>
+<span class="nc" id="L192">            Account updatedTo = to.withBalance(to.balance().add(amount));</span>
+            
+            // 使用原子操作更新账户
+<span class="nc" id="L195">            accounts.put(fromAccount, updatedFrom);</span>
+<span class="nc" id="L196">            accounts.put(toAccount, updatedTo);</span>
+        } finally {
+<span class="nc" id="L198">            accountLock.writeLock().unlock();</span>
+        }
+<span class="nc" id="L200">    }</span>
+
+    public List&lt;Account&gt; findAllAccounts() {
+<span class="nc" id="L203">        return new ArrayList&lt;&gt;(accounts.values());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
